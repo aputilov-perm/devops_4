@@ -1,0 +1,65 @@
+---
+- name: Установить Nginx
+  package:
+    name: nginx
+    state: present
+
+- name: Запустить и включить службу Nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Убедиться, что директории сайтов существуют
+  file:
+    path: "/var/www/{{ item.name }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ vhosts }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Копировать index.html для {{ item.name }}
+  template:
+    src: index.html.j2
+    dest: "/var/www/{{ item.name }}/index.html"
+    mode: '0644'
+  loop: "{{ vhosts }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: restart nginx
+
+- name: Создать конфиг vhost для {{ item.name }}
+  template:
+    src: vhost.conf.j2
+    dest: "/etc/nginx/sites-available/{{ item.name }}.conf"
+    mode: '0644'
+  loop: "{{ vhosts }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: restart nginx
+
+- name: Активировать сайт {{ item.name }}
+  file:
+    src: "/etc/nginx/sites-available/{{ item.name }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ item.name }}.conf"
+    state: link
+    force: yes
+  loop: "{{ vhosts }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: restart nginx
+
+- name: Проверить конфигурацию Nginx
+  command: nginx -t
+  changed_when: false
+
+- name: Перезапустить Nginx при необходимости
+  service:
+    name: nginx
+    state: restarted
+  when: ansible_facts.packages.nginx is defined
+  register: nginx_restart_result
+  until: nginx_restart_result is succeeded
+  retries: 3
+  delay: 5
