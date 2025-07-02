@@ -4,9 +4,9 @@
   become: yes
   vars:
     vhosts:
-      - name: site1.local
+      - name: nginx1.devops.situ
         port: 80
-      - name: site2.local
+      - name: nginx2.devops.situ
         port: 8080
 
   roles:
