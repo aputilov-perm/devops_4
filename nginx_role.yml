@@ -1,0 +1,13 @@
+---
+- name: Настройка Nginx с несколькими виртуальными хостами
+  hosts: all
+  become: yes
+  vars:
+    vhosts:
+      - name: site1.local
+        port: 80
+      - name: site2.local
+        port: 8080
+
+  roles:
+    - role: nginx_vhost
